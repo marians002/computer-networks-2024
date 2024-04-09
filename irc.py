@@ -67,4 +67,40 @@ def send_message(msg):
         except Exception as e:
             print("Error", e)
 
+def change_nick(sections):
+    old = sections[0][1:].split('!')[0]
+    new = sections[2].lstrip(':')
+    if old == nickname:
+        nickname = new  
+        print(f"Nuevo nickname: {new}.")
+    else:
+        print("Los nicks no coinciden")
+
+
+def receive_messages():
+    buffer = ""  
+    try:
+        info = socket.recv(4096)  # 4096 bytes recibidos
+
+        buffer += info.decode('utf-8', errors='replace')
+
+        while "\r\n" in buffer:
+            message, buffer = buffer.split("\r\n", 1)
+            sections = message.split(" ")
+
+            if sections[0] == "PING":
+                socket.sendall(f"PONG {sections}\r\n".encode())
+            elif sections[0].startswith(":") and sections[1] == "NICK":
+                change_nick(sections)
+            elif sections[1] == "PRIVMSG":
+                handle_privmsg(sections)
+
+            print(message)
+
+    except UnicodeDecodeError as e:
+        print(f"Error de decodificación en la recepción de mensajes: {e}.")
+    except Exception as e:
+        print(f"Error al recibir mensaje: {e}.")
+       
+
 connect_to_irc_server("irc.freenode.net", 6667, "#freenode", "marians002")
