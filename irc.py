@@ -4,14 +4,14 @@ import threading
 FREENODE = "207.148.28.126"
 class Client:
     def __init__(self, host, port, nick, name):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.host = host
         self.port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.nick = nick
         self.name = name
         self.connected = False
     
-    #Tries to establish connection and  sends the NICK/NAME message upon success
+    #Intenta establecer la conexión y envía mensajes de nick/name si tiene éxito
     def connect_to_irc_server(self):
         try: 
             # Conectarse al servidor IRC
@@ -31,7 +31,8 @@ class Client:
                 self.socket.sendall(f"{msg}\r\n".encode())
             except Exception as e:
                 print("Error al enviar mensaje:", e)
-    #Allows to receive  messages from the server, show them in the console and handle them
+
+    #Permite recibir mensajes del recibir, mostrarlos en consola y manejarlos
     def rcv_messages(self):
         buffer = ""  
         while self.connected:
@@ -77,16 +78,15 @@ class Client:
         old = sections[0][1:].split('!')[0]
         new = sections[2].lstrip(':')
         if old == new:
-            nickname = new  
-            print(f"Nuevo nickname: {new}.")
+            self.nick = new  
+            print(f"Nuevo nickname: {self.nick}.")
         else:
             print("Los nicks no coinciden")
 
-    #Metodo sin usar, se puede eliminar?
-    """ def handle_input(self, target):
+    def handle_input(self, target):
         while True:
             message = input()
-            self.handle_privmsg(self.socket, target, message) """
+            self.handle_privmsg(self.socket, target, message)
     
     
     def handle_privmsg(self, msg):
@@ -172,20 +172,23 @@ class Client:
 
     def leave_channel(self, sections):
         user_info = sections[0][1:]
-        channel = sections[2].strip() if sections[2].startswith(':') else parts[2]
+        channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
         print(f"El usuario {user_info} ha salido del canal {channel}")
+
+
 def main():
-    #host = input("Ingrese la dirección del host:")
-    #kport = int(input("Ingrese la dirección del puerto:"))
+    host = input("Ingrese la dirección del host:")
+    port = int(input("Ingrese la dirección del puerto:"))
     nick = input("Ingrese su nick:")
     user = input("Ingrese su nombre real:")
     
-    client = Client(FREENODE, 6667, nick, user)
+    client = Client(host, port, nick, user)
     
     client.connect_to_irc_server()
     
     if client.connected:
-        print(f"Conexión exitosa, bienvemido {client.nick}")
+        print(f"Conexión exitosa. Bienvenido {client.nick}!")
+        
         # Iniciar un nuevo hilo para manejar la entrada de la consola
         threading.Thread(target=client.rcv_messages, daemon=True).start()
         
