@@ -74,6 +74,7 @@ class Client:
     ######################
     ######################  
     
+    # Cambia el nickname del cliente
     def change_nick(self, sections):
         old = sections[0][1:].split('!')[0]
         new = sections[2].lstrip(':')
@@ -87,7 +88,6 @@ class Client:
         while True:
             message = input()
             self.handle_privmsg(self.socket, target, message)
-    
     
     def handle_privmsg(self, msg):
         full_msg = " ".join(msg)
@@ -175,6 +175,54 @@ class Client:
         channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
         print(f"El usuario {user_info} ha salido del canal {channel}")
 
+    def get_channel_users(self, channel=""):
+        if channel:
+            self.socket.sendall(f"NAMES {channel}\r\n".encode())
+        else:
+            self.socket.sendall("NAMES\r\n".encode())
+    
+    def process_command(self, cmd):
+        sections = cmd.split(' ', 1)
+        cmd = sections[0].lower()
+
+        if cmd == "/join" and len(sections) > 1:
+            self.socket.sendall(f"JOIN {sections[1]}\r\n".encode())
+        
+        elif cmd == "/part" and len(sections) > 1:
+            self.socket.sendall(f"PART {sections[1]}\r\n".encode())
+        
+        elif cmd == "/msg" and len(sections) > 1:
+            target_msg = sections[1].split(' ', 1)
+            if len(target_msg) > 1:
+                self.socket.sendall(f"PRIVMSG {target_msg[0]} :{target_msg[1]}\r\n".encode())
+        
+        elif cmd == "/notice" and len(sections) > 1:
+            target_msg = sections[1].split(' ', 1)
+            if len(target_msg) > 1:
+                self.socket.sendall(f"NOTICE {target_msg[0]} :{target_msg[1]}\r\n".encode())
+       
+        elif cmd == "/mode" and len(sections) > 1:
+            mode_args = sections[1].split(' ', 1)
+            if len(mode_args) > 1:
+                self.socket.sendall(f"MODE {mode_args[0]} {mode_args[1]}\r\n".encode())
+        
+        elif cmd == "/list":
+            self.socket.sendall("LIST\r\n".encode())
+        
+        elif cmd == "/names":
+            if len(sections) > 1:
+                self.get_channel_users(sections[1])
+            else:
+                self.get_channel_users()
+        
+        elif cmd == "/nick" and len(sections) > 1:
+            self.socket.sendall(f"NICK {sections[1]}\r\n".encode())
+       
+        elif cmd == "/whois" and len(sections) > 1:
+            self.socket.sendall(f"WHOIS {sections[1]}\r\n".encode())
+        
+        else:
+            print("No se reconoce el comando o faltan argumentos.")
 
 def main():
     host = input("Ingrese la dirección del host:")
