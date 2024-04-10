@@ -8,6 +8,17 @@ class IRCServer:
         self.connections = []
         self.channels = {"General": []}
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        self.socket.bind((self.host, self.port))
+        self.socket.listen(5)
+        print(f"Servidor IRC iniciado en {self.host}:{self.port}")
+
+        while True:
+            client_socket, client_address = self.socket.accept()
+            print(f"Nueva conexión desde {client_address}")
+            client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_handler.daemon = True
+            client_handler.start()
 
     def handle_client(self, client_socket):
         self.connections.append(client_socket)
@@ -100,3 +111,4 @@ class IRCServer:
                 break
         else:
             client_socket.sendall(f"No se encontró el canal {channel}\r\n".encode())
+
