@@ -54,12 +54,18 @@ class Client:
                         self.change_nick(sections)
                     elif sections[1] == "PRIVMSG":
                         self.handle_privmsg(sections)
-                    elif sections[1] in ["311", "319", "322", "323","324", "353", "366", "431", "432", "433"]:
-                        self.num_handler(sections)
+                    elif sections[1] == "NOTICE":
+                        self.handle_notice(sections)
                     elif sections[1] == "JOIN":
                         self.join_channel(sections)
                     elif sections[1] == "PART":
                         self.leave_channel(sections)
+                    elif sections[1] == "KICK":
+                        self.handle_kick(sections)
+                    elif sections[1] == "MODE":
+                        self.handle_mode(sections)
+                    elif sections[1] in ["311", "319", "322", "323","324", "353", "366", "431", "432", "433"]:
+                        self.num_handler(sections)
 
                     print(message)
 
@@ -84,11 +90,7 @@ class Client:
         else:
             print("Los nicks no coinciden")
 
-    def handle_input(self, target):
-        while True:
-            message = input()
-            self.handle_privmsg(self.socket, target, message)
-    
+
     def handle_privmsg(self, msg):
         full_msg = " ".join(msg)
         # Extrae el remitente del mensaje
@@ -107,6 +109,36 @@ class Client:
         else:
             # Mensaje directo
             print(f"Mensaje directo de {sender}: {message}")
+            
+    def handle_notice(self, sections):
+        # Join the sections into a full message
+        full_msg = " ".join(sections)
+        # Extract the sender's nickname from the full message
+        sender = full_msg[1:full_msg.find('!')]
+        # Find the start of the message content
+        message_start = full_msg.find(':', 1)
+        # Extract the message content from the full message
+        message = full_msg[message_start + 1:]
+        # Print the sender's nickname and their message
+        print(f"Notice de {sender}: {message}")
+    
+    def handle_kick(self, sections):
+        # Extract the channel name from the sections
+        channel = sections[2]
+        # Extract the nickname of the user who was kicked
+        user_kicked = sections[3]
+        # Extract the reason for the kick, if any, from the sections
+        reason = " ".join(sections[4:]).lstrip(':')
+        # Print a message indicating that the user was kicked from the channel and the reason
+        print(f"{user_kicked} ha sido expulsado de {channel} por la razón: {reason}")
+    
+    def handle_mode(self, sections):
+        source = sections[0][1:]
+        channel_or_user = sections[2]
+        mode_changes = sections[3:]
+
+        # Imprime o procesa el cambio de modo
+        print(f"{source} cambió el modo de {channel_or_user} a {' '.join(mode_changes)}")
 
     def num_handler(self, sections):
         code = sections[1]
@@ -164,25 +196,15 @@ class Client:
         # Código 433: Nickname en uso/inválido
         elif code == "433":
             print("El nickname deseado está en uso o es inválido.")
-            
-    def join_channel(self, sections):
-            user_info = sections[0][1:]
-            channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
-            print(f"El usuario {user_info} se ha unido al canal {channel}")
-
-    def leave_channel(self, sections):
-        user_info = sections[0][1:]
-        channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
-        print(f"El usuario {user_info} ha salido del canal {channel}")
-
-    def get_channel_users(self, channel=""):
-        if channel:
-            self.socket.sendall(f"NAMES {channel}\r\n".encode())
-        else:
-            self.socket.sendall("NAMES\r\n".encode())
+                
+    ######################
+    ######################
+    ###      CMD       ###
+    ######################
+    ######################  
     
-    def process_command(self, cmd):
-        sections = cmd.split(' ', 1)
+    def process_command(self, command):
+        sections = command.split(' ', 1)
         cmd = sections[0].lower()
 
         if cmd == "/join" and len(sections) > 1:
@@ -223,6 +245,24 @@ class Client:
         
         else:
             print("No se reconoce el comando o faltan argumentos.")
+    
+    
+    def join_channel(self, sections):
+        user_info = sections[0][1:]
+        channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
+        print(f"El usuario {user_info} se ha unido al canal {channel}")
+        
+
+    def leave_channel(self, sections):
+        user_info = sections[0][1:]
+        channel = sections[2].strip() if sections[2].startswith(':') else sections[2]
+        print(f"El usuario {user_info} ha salido del canal {channel}")
+    
+    def get_channel_users(self, channel=""):
+        if channel:
+            self.socket.sendall(f"NAMES {channel}\r\n".encode())
+        else:
+            self.socket.sendall("NAMES\r\n".encode())
 
 def main():
     host = input("Ingrese la dirección del host:")
@@ -241,8 +281,11 @@ def main():
         threading.Thread(target=client.rcv_messages, daemon=True).start()
         
         while True:
-            msg = input()
-            client.send_message(msg)
+            user_input = input()
+            if user_input.startswith('/'):
+                client.process_command(user_input)
+            else:
+                client.send_message(user_input)
         
     else:
             print("No se pudo conectar al servidor. Por favor, vuelva a intentarlo más tarde.")
