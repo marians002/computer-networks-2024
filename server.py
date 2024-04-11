@@ -15,7 +15,7 @@ class IRCServer:
 
         while True:
             client_socket, client_address = self.socket.accept()
-            print(f"Nueva conexión desde {client_address}")
+            print(f"Nueva conexion desde {client_address}")
             client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
             client_handler.daemon = True
             client_handler.start()
@@ -85,17 +85,17 @@ class IRCServer:
                         client_socket.sendall(f"Mensaje de {sender_socket.getpeername()}: {message}\r\n".encode())
                 break
         else:
-            sender_socket.sendall(f"No se encontr� el canal {target}\r\n".encode())
+            sender_socket.sendall(f"No se encontro el canal {target}\r\n".encode())
             
     def send_notice(self, sender_socket, target, notice):
         for channel in self.channels:
             if target == channel:
                 for client_socket in self.channels[channel]:
                     if client_socket != sender_socket:
-                        client_socket.sendall(f"Notificaci�n de {sender_socket.getpeername()}: {notice}\r\n".encode())
+                        client_socket.sendall(f"Notificacion de {sender_socket.getpeername()}: {notice}\r\n".encode())
                 break
         else:
-            sender_socket.sendall(f"No se encontr� el canal {target}\r\n".encode())
+            sender_socket.sendall(f"No se encontro el canal {target}\r\n".encode())
             
     def list_channels(self, client_socket):
         client_socket.sendall("Lista de canales:\r\n".encode())
@@ -110,5 +110,5 @@ class IRCServer:
                     client_socket.sendall(f"- {user_socket.getpeername()}\r\n".encode())
                 break
         else:
-            client_socket.sendall(f"No se encontr� el canal {channel}\r\n".encode())
+            client_socket.sendall(f"No se encontro el canal {channel}\r\n".encode())
 
