@@ -46,6 +46,8 @@ class IRCServer:
             # JOIN
             if message.startswith("JOIN"):
                 channel = message.split(" ")[1]
+                if channel not in self.channels:
+                    self.channels[channel] = []
                 self.channels[channel].append(client_socket)
                 client_socket.sendall(f"Te has unido al canal {channel}\r\n".encode())
             # PART
