@@ -8,16 +8,21 @@ class IRCServer:
         self.port = port
         self.connections = []
         self.channels = {"General": []}
+        # AF_INET: significa que la familia de direcciones sporotadas por el socket es IPv4
+        # SOCK_STREAM: tipo de socket: TCP. Usa protocolo TCP para transimision de datos
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self.socket.bind((self.host, self.port))
-        self.socket.listen(5)
+        self.socket.listen(5) # Numero maximo de conexiones en cola
         print(f"Servidor IRC iniciado en {self.host}:{self.port}")
 
         while True:
             client_socket, client_address = self.socket.accept()
             print(f"Nueva conexion desde {client_address}")
             client_handler = threading.Thread(target=self.handle_client, args=(client_socket,))
+            # Set the client handler thread to daemon mode
+            # This means that the thread will not prevent the program from exiting
+            # The thread will automatically terminate when the main program ends
             client_handler.daemon = True
             client_handler.start()
 
@@ -30,21 +35,25 @@ class IRCServer:
 
         while True:
 
-            data = client_socket.recv(1024)
+            data = client_socket.recv(4096)
             if not data:
                 break
             message = data.decode().strip()
             print(f"Mensaje recibido: {message}")
 
             # Procesamiento de comandos
+
+            # JOIN
             if message.startswith("JOIN"):
                 channel = message.split(" ")[1]
                 self.channels[channel].append(client_socket)
                 client_socket.sendall(f"Te has unido al canal {channel}\r\n".encode())
+            # PART
             elif message.startswith("PART"):
                 channel = message.split(" ")[1]
                 self.channels[channel].remove(client_socket)
                 client_socket.sendall(f"Has dejado el canal {channel}\r\n".encode())
+            # MSG
             elif message.startswith("MSG"):
                 parts = message.split(" ", 2)
                 if len(parts) >= 3:
@@ -53,6 +62,7 @@ class IRCServer:
                     self.send_msg_or_notice(client_socket, target, msg, False)
                 else:
                     client_socket.sendall("Formato incorrecto. Uso: MSG <destino> <mensaje>\r\n".encode())
+            # NOTICE
             elif message.startswith("NOTICE"):
                 parts = message.split(" ", 2)
                 if len(parts) >= 3:
@@ -61,8 +71,10 @@ class IRCServer:
                     self.send_msg_or_notice(client_socket, target, notice, True)
                 else:
                     client_socket.sendall("Formato incorrecto. Uso: NOTICE <destino> <mensaje>\r\n".encode())
+            # LIST
             elif message.startswith("LIST"):
                 self.list_channels(client_socket)
+            # NAMES
             elif message.startswith("NAMES"):
                 parts = message.split(" ", 1)
                 if len(parts) > 1:
