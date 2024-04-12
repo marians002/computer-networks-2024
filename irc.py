@@ -265,10 +265,10 @@ class Client:
             self.socket.sendall("NAMES\r\n".encode())
 
 def main():
-    host = input("Ingrese la dirección del host:")
-    port = int(input("Ingrese la dirección del puerto:"))
-    nick = input("Ingrese su nick:")
-    user = input("Ingrese su nombre real:")
+    host = input("Ingrese la dirección del host: ")
+    port = int(input("Ingrese la dirección del puerto: "))
+    nick = input("Ingrese su nick: ")
+    user = input("Ingrese su nombre real: ")
     
     client = Client(host, port, nick, user)
     
