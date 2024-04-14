@@ -84,7 +84,22 @@ class IRCServer:
                     self.list_users_in_channel(client_socket, channel)
                 else:
                     self.list_users_in_channel(client_socket, "General")
-
+            # WHOIS
+            elif message.startswith("WHOIS"):
+                parts = message.split(" ", 1)
+                if len(parts) > 1:
+                    target = parts[1]
+                    self.handle_whois(client_socket, target)
+                else:
+                    client_socket.sendall("Formato incorrecto. Uso: WHOIS <usuario>\r\n".encode())
+            # TOPIC
+            elif message.startswith("TOPIC"):
+                parts = message.split(" ", 1)
+                if len(parts) > 1:
+                    channel = parts[1]
+                    client_socket.sendall(f"El topic del canal {channel} es: {self.channels[channel]}\r\n".encode())
+                else:
+                    client_socket.sendall("Formato incorrecto. Uso: TOPIC <canal>\r\n".encode())
             else:
                 self.send_msg_or_notice(client_socket, "General", message, False)
 
@@ -122,6 +137,17 @@ class IRCServer:
         else:
             client_socket.sendall(f"No se encontro el canal {channel}\r\n".encode())
 
+    def handle_whois(self, client_socket, target):
+        for channel in self.channels:
+            for user_socket in self.channels[channel]:
+                if user_socket.getpeername() == target:
+                    client_socket.sendall(f"Usuario {target} en el canal {channel}\r\n".encode())
+                    break
+            else:
+                continue
+            break
+        else:
+            client_socket.sendall(f"Usuario {target} no encontrado\r\n".encode())
 
 def main():
     host = input("Ingrese la direccion del host: ")
